@@ -4,11 +4,11 @@ import (
 	"github.com/eljamo/libwordle/domain"
 )
 
-type RecentWordOfTheDayRepository interface {
+type RecentWordLogRepository interface {
 	// Returns all records in the table
-	FindAll() ([]domain.RecentWordOfTheDay, error)
+	FindAll() ([]domain.RecentWordLog, error)
 	// Returns a single record by date
-	FindByDate(date string) (*domain.RecentWordOfTheDay, error)
+	FindByDate(date string) (*domain.RecentWordLog, error)
 	// Inserts a new record into the table
 	InsertWord(date string, word string) error
 	// Deletes a record by date

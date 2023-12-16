@@ -3,6 +3,8 @@ package config
 import "time"
 
 type Settings struct {
+	// The name of the application
+	AppName string `key:"app_name" json:"app_name,omitempty"`
 	// Used for generating a deterministic random number
 	Time time.Time `key:"time" json:"time,omitempty"`
 	// Word Length to use for the game

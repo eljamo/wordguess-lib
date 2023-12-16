@@ -8,10 +8,8 @@ import (
 	"github.com/eljamo/libwordle/config"
 	"github.com/eljamo/libwordle/domain"
 	"github.com/eljamo/libwordle/internal/rng"
-	"github.com/eljamo/libwordle/internal/sqlite"
 	"github.com/eljamo/libwordle/internal/validator"
 	"github.com/eljamo/libwordle/repository"
-	sqliteRepo "github.com/eljamo/libwordle/repository/sqlite"
 )
 
 // A default implementation of the WordService interface. This can act as a
@@ -20,7 +18,7 @@ import (
 // would need to adjustments to word selection.
 type DefaultWordService struct {
 	cfg      *config.Settings
-	repo     repository.RecentWordOfTheDayRepository
+	repo     repository.RecentWordLogRepository
 	rngSvc   rng.RNGService
 	wordList []string
 }
@@ -29,9 +27,9 @@ const isoDateFmt = "2006-01-02"
 const recordMax = 364
 
 // Creates a new instance of DefaultWordService with a custom repository.
-func NewCustomDefaultWordService(
+func NewDefaultWordService(
 	cfg *config.Settings,
-	repo repository.RecentWordOfTheDayRepository,
+	repo repository.RecentWordLogRepository,
 	rngSvc rng.RNGService,
 ) (*DefaultWordService, error) {
 	wordList, err := getWordList(cfg.WordList, cfg.WordLength)
@@ -47,16 +45,6 @@ func NewCustomDefaultWordService(
 	}, nil
 }
 
-// Creates a new instance of DefaultWordService with a sqlite repository useful
-// for development, testing, and where you don't need a database server. For
-// example, making a offline CLI or GUI application.
-func NewDefaultWordService(cfg *config.Settings, db *sqlite.DB) (*DefaultWordService, error) {
-	rngSvc := rng.NewRNGService()
-	repo := sqliteRepo.NewRecentWordOfTheDayRepository(db)
-
-	return NewCustomDefaultWordService(cfg, repo, rngSvc)
-}
-
 func getWordList(wordList string, wordLength int) ([]string, error) {
 	wl, err := asset.GetFilteredWordList(wordList, wordLength)
 	if err != nil {
@@ -70,7 +58,7 @@ func getWordList(wordList string, wordLength int) ([]string, error) {
 	return wl, nil
 }
 
-func (s *DefaultWordService) extractWordsFromRecentRecords(slice []domain.RecentWordOfTheDay) []string {
+func (s *DefaultWordService) extractWordsFromRecentRecords(slice []domain.RecentWordLog) []string {
 	var words []string
 	for _, s := range slice {
 		words = append(words, s.Word)
@@ -98,7 +86,7 @@ func (s *DefaultWordService) findNewWord(pws []string) (string, error) {
 	return word, nil
 }
 
-func (s *DefaultWordService) getNewWord(recentWords []domain.RecentWordOfTheDay) (string, error) {
+func (s *DefaultWordService) getNewWord(recentWords []domain.RecentWordLog) (string, error) {
 	pws := s.extractWordsFromRecentRecords(recentWords)
 	if validator.UnorderedSlicesAreEqual(s.wordList, pws) {
 		return "", fmt.Errorf("all words in word list %s with a word_length of %d have been used", s.cfg.WordList, s.cfg.WordLength)
@@ -107,7 +95,7 @@ func (s *DefaultWordService) getNewWord(recentWords []domain.RecentWordOfTheDay)
 	return s.findNewWord(pws)
 }
 
-func findOldestRecord(records []domain.RecentWordOfTheDay) (string, error) {
+func findOldestRecord(records []domain.RecentWordLog) (string, error) {
 	if len(records) == 0 {
 		return "", fmt.Errorf("no records found")
 	}
@@ -129,7 +117,7 @@ func findOldestRecord(records []domain.RecentWordOfTheDay) (string, error) {
 	return oldestDate.Format(isoDateFmt), nil
 }
 
-func (s *DefaultWordService) deleteOldestRecord(pw []domain.RecentWordOfTheDay) error {
+func (s *DefaultWordService) deleteOldestRecord(pw []domain.RecentWordLog) error {
 	or, err := findOldestRecord(pw)
 	if err != nil {
 		return err

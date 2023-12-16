@@ -1,6 +1,6 @@
 package domain
 
-type RecentWordOfTheDay struct {
+type RecentWordLog struct {
 	Date string `json:"date"`
 	Word string `json:"word"`
 }
